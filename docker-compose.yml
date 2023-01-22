@@ -5,6 +5,10 @@ services:
   docker-socket-proxy:
     container_name: docker-socket-proxy
     
+    # !!! THIS IS VERY DANGEROUS - ONLY DO THIS FOR TESTING !!!
+    ports:
+      - "2375:2375"
+    
     build:
       context: ./
     
@@ -20,7 +24,7 @@ services:
       CONTAINERS: 1
       DISTRIBUTION: 0
       EVENTS: 1
-      EXEC: 0
+      EXEC: 1
       IMAGES: 1
       INFO: 0
       NETWORKS: 0
@@ -39,15 +43,15 @@ services:
       VOLUMES: 0
       CONTAINERS_CREATE: 0
       CONTAINERS_PRUNE: 0
-      CONTAINERS_RESIZE: 0
-      CONTAINERS_START: 0
+      CONTAINERS_RESIZE: 1
+      CONTAINERS_START: 1
       CONTAINERS_UPDATE: 0
       CONTAINERS_RENAME: 0
       CONTAINERS_PAUSE: 0
       CONTAINERS_UNPAUSE: 0
       CONTAINERS_ATTACH: 0
       CONTAINERS_WAIT: 0
-      CONTAINERS_EXEC: 0
+      CONTAINERS_EXEC: 1
       VOLUMES_CREATE: 0
       VOLUMES_PRUNE: 0
       NETWORKS_CREATE: 0
@@ -55,7 +59,7 @@ services:
       NETWORKS_CONNECT: 0
       NETWORKS_DISCONNECT: 0
       NETWORKS_DELETE: 0
-      CONTAINERS_DELETE: 0
+      CONTAINERS_DELETE: 1
       IMAGES_DELETE: 0
       VOLUMES_DELETE: 0
 

@@ -4,7 +4,8 @@ FROM nginx:1.23.3-alpine as stage1
 EXPOSE 2375
 
 # Set environment var defaults
-ENV ALLOW_RESTARTS=0 \
+ENV DESCRIPTIVE_ERRORS=1 \
+    ALLOW_RESTARTS=0 \
     AUTH=0 \
     BUILD=0 \
     COMMIT=0 \
@@ -55,5 +56,5 @@ ENV ALLOW_RESTARTS=0 \
 # Install python
 RUN apk add --update --no-cache python3
 
-# Copy the config creator script
+# Copy files
 COPY --chmod=775 docker-proxy-config.py /docker-entrypoint.d/10-docker-proxy-config.sh

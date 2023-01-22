@@ -42,23 +42,24 @@ VARS = {
     "CONTAINERS_ATTACH": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/attach"},
     "CONTAINERS_WAIT": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/wait"},
     "CONTAINERS_EXEC": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/exec"},
-    "CONTAINERS_DELETE": {"type": "DELETE", "regex": "containers/[a-zA-Z0-9_.-]+"},
+    # "CONTAINERS_DELETE": {"type": "DELETE", "regex": "containers/[a-zA-Z0-9_.-]+"},
     "CONTAINERS": {"type": "GET", "regex": "containers"},
     # End Container commands
     "DISTRIBUTION": {"type": "GET", "regex": "distribution"},
     "EVENTS": {"type": "GET", "regex": "events"},
-    "EXEC": {"type": "GET", "regex": "exec"},
+    # %%% LOOK INTO WHETHER THIS IS POST, GET OR BOTH
+    "EXEC": {"type": "POST GET", "regex": "exec"},
     # Images commands
     "IMAGES_CREATE": {"type": "POST", "regex": "images/create"},
     "IMAGES_PRUNE": {"type": "POST", "regex": "images/prune"},
-    "IMAGES_DELETE": {"type": "DELETE", "regex": "images/[a-zA-Z0-9_.-]+"},
+    # "IMAGES_DELETE": {"type": "DELETE", "regex": "images/[a-zA-Z0-9_.-]+"},
     "IMAGES": {"type": "GET", "regex": "images"},
     # End Images commands
     "INFO": {"type": "GET", "regex": "info"},
     # Network Commands
     "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create"},
     "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune"},
-    "NETWORKS_DELETE": {"type": "DELETE", "regex": "networks/[a-zA-Z0-9_.-]+"},
+    # "NETWORKS_DELETE": {"type": "DELETE", "regex": "networks/[a-zA-Z0-9_.-]+"},
     "NETWORKS": {"type": "GET", "regex": "networks"},
     # End Network Commands
     "NODES": {"type": "GET", "regex": "nodes"},
@@ -75,12 +76,18 @@ VARS = {
     # Volume commands
     "VOLUMES_CREATE": {"type": "POST", "regex": "volumes/create"},
     "VOLUMES_PRUNE": {"type": "POST", "regex": "volumes/prune"},
-    "VOLUMES_DELETE": {"type": "DELETE", "regex": "volumes/[a-zA-Z0-9_.-]+"},
+    # "VOLUMES_DELETE": {"type": "DELETE", "regex": "volumes/[a-zA-Z0-9_.-]+"},
     "VOLUMES": {"type": "GET", "regex": "volumes"}
     # End volume commands
 }
 
-# Open file
+# Create custom errors directory and default 403 error file
+os.makedirs("/usr/share/nginx/html/error", exist_ok=True)
+e = open(f"/usr/share/nginx/html/error/custom_403.html", "w")
+e.write(f'403 Forbidden: docker-socket-proxy is configured to not allow access to this function.')
+e.close()
+
+# Open config file
 f = open("/etc/nginx/nginx.conf", "w")
 
 # Output generic nignx.conf content, but have workers run as root so they can access the docker socket.
@@ -97,9 +104,10 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
-    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-                      '$status $body_bytes_sent "$http_referer" '
-                      '"$http_user_agent" "$http_x_forwarded_for"';
+    # log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                   '$status $body_bytes_sent "$http_referer" '
+    #                   '"$http_user_agent" "$http_x_forwarded_for"';
+    log_format  main  '[$time_local] "$request" $status';
 
     access_log  /var/log/nginx/access.log  main;
 
@@ -113,6 +121,13 @@ http {
     server {
         listen 2375 default_server;
 
+        # Custom 403 forbidden page
+        error_page 403 /error/custom_403.html;
+        location /error {
+            root /usr/share/nginx/html;
+            internal;
+        }
+        
         # deny everything that doesn't match another location
         location / {
             return 403; 
@@ -124,10 +139,10 @@ http {
 for key in VARS:
     # Only add location if enviroment label set.
     if (os.environ.get(key) == "1"):
-        # If type is DELETE we also want to add GET (fixes issues with priority of regex) and
-        # generally GET does not pose a security issue.
-        if (VARS[key]['type'] == 'DELETE'):
-            type = "DELETE GET"
+        # Check if type is DELETE is also set (fixes issues with priority of regex)
+        
+        if (os.environ.get(key+"_DELETE") == "1"):
+            type = VARS[key]['type'] + " DELETE"
         else:
             type = VARS[key]['type']
 
@@ -135,13 +150,35 @@ for key in VARS:
         f.writelines([
             f"        # {key}\n",
             f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
-            f"            proxy_pass http://docker;\n",
-            f"            limit_except {type} {{\n",
-            f"                deny all;\n",
-            f"            }}\n",
-            f"        }}\n",
+            "            proxy_pass http://docker;\n",
+            # Added to enable websockets
+            "            proxy_http_version 1.1;\n",
+            # "            proxy_set_header Connection '';\n"
+            "            proxy_set_header Upgrade $http_upgrade;\n",
+            # "            proxy_set_header Connection 'Upgrade';\n",
+            "            proxy_set_header Connection $http_connection;\n",
+            f"            limit_except {type} DELETE {{\n",
+            "                deny all;\n",
+            "            }\n",
+            "        }\n",
             "\n"
         ])
+    elif (os.environ.get("DESCRIPTIVE_ERRORS") == "1"):
+        # Output location block for descriptive errors
+        f.writelines([
+            f"        # {key} forbidden\n",
+            f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
+            "           # Custom 403 forbidden page\n",
+            f"           error_page 403 /error/custom_403_{key}.html;\n",
+            "           return 403;\n",
+            "        }\n",
+            "\n"
+        ])
+
+        # Output the custom error page
+        e = open(f"/usr/share/nginx/html/error/custom_403_{key}.html", "w")
+        e.write(f'403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the {key} option.')
+        e.close()
 
 # Output closing text
 f.write('''
@@ -149,8 +186,8 @@ f.write('''
 
     upstream docker {
         server unix:/var/run/docker.sock;
+        # keepalive 64;
     }
-
 }
 ''')
 
