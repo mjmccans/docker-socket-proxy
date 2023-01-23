@@ -1,6 +1,9 @@
 ---
 version: "3.8"
 
+# NOTES: 1. Test exec: docker -H tcp://localhost:2375 exec -it docker-socket-proxy /bin/ash
+#        
+
 services:
   docker-socket-proxy:
     container_name: docker-socket-proxy

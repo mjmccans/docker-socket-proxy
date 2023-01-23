@@ -144,7 +144,6 @@ for key in VARS:
         
         # Handle DELETE as a special case of the base *_LIST
         if (os.environ.get(key[:-5]+"_DELETE") == "1"):
-            print("ADD DELETE")
             type = VARS[key]['type'] + " DELETE"
         else:
             type = VARS[key]['type']
@@ -156,8 +155,8 @@ for key in VARS:
             "            proxy_pass http://docker;\n"
         ])
         
-        # For now, only CONTAINERS_ATTACH requires websockets so this is a special case.
-        if (key == "CONTAINERS_ATTACH"):
+        # For now, only CONTAINERS_ATTACH and EXEC require websockets so this is a special case.
+        if (key == "CONTAINERS_ATTACH" or key == "EXEC"):
             f.writelines([ 
                 "            # Enable websockets\n",
                 "            proxy_http_version 1.1;\n",
