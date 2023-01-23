@@ -23,61 +23,63 @@
 import os
 
 # Setup variables (the order matters from an nginx perspective)
+#
+# Note: DELETE operations are handled as a special case due to how
+#       the NGINX config file has to be formatted.
+
 VARS = {
     # GET Requests
     "AUTH": {"type": "GET", "regex": "auth"},
-    "BUILD": {"type": "GET", "regex": "build"},
-    "COMMIT": {"type": "GET", "regex": "commit"},
+    "COMMIT": {"type": "GET", "regex": "commit"}, # %%% Look into this (seems images realted only)
     "CONFIGS": {"type": "GET", "regex": "configs"},
     # Container commands
-    "CONTAINERS_CREATE": {"type": "POST", "regex": "containers/create"},
-    "CONTAINERS_PRUNE": {"type": "POST", "regex": "containers/prune"},
-    "ALLOW_RESTARTS": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/((stop)|(restart)|(kill))"},
+    "CONTAINERS_ATTACH": {"type": "GET POST", "regex": "containers/[a-zA-Z0-9_.-]+/attach"},
+    "CONTAINERS_KILL": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/kill"},
+    "CONTAINERS_PAUSE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/pause"},
+    "CONTAINERS_RENAME": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/rename"},
+    "CONTAINERS_RESTART": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/restart"},
     "CONTAINERS_RESIZE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/resize"},
     "CONTAINERS_START": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/start"},
+    "CONTAINERS_STOP": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/stop"},
     "CONTAINERS_UPDATE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/update"},
-    "CONTAINERS_RENAME": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/rename"},
-    "CONTAINERS_PAUSE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/pause"},
     "CONTAINERS_UNPAUSE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/unpause"},
-    "CONTAINERS_ATTACH": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/attach"},
     "CONTAINERS_WAIT": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/wait"},
     "CONTAINERS_EXEC": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/exec"},
-    # "CONTAINERS_DELETE": {"type": "DELETE", "regex": "containers/[a-zA-Z0-9_.-]+"},
-    "CONTAINERS": {"type": "GET", "regex": "containers"},
+    "CONTAINERS_CREATE": {"type": "POST", "regex": "containers/create"},
+    "CONTAINERS_PRUNE": {"type": "POST", "regex": "containers/prune"},
+    "CONTAINERS_LIST": {"type": "GET", "regex": "containers"},
     # End Container commands
     "DISTRIBUTION": {"type": "GET", "regex": "distribution"},
     "EVENTS": {"type": "GET", "regex": "events"},
-    # %%% LOOK INTO WHETHER THIS IS POST, GET OR BOTH
     "EXEC": {"type": "POST GET", "regex": "exec"},
     # Images commands
+    "IMAGES_BUILD": {"type": "GET", "regex": "build"},
     "IMAGES_CREATE": {"type": "POST", "regex": "images/create"},
     "IMAGES_PRUNE": {"type": "POST", "regex": "images/prune"},
-    # "IMAGES_DELETE": {"type": "DELETE", "regex": "images/[a-zA-Z0-9_.-]+"},
-    "IMAGES": {"type": "GET", "regex": "images"},
+    "IMAGES_LIST": {"type": "GET", "regex": "images"},
     # End Images commands
     "INFO": {"type": "GET", "regex": "info"},
     # Network Commands
+    "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/connect"},
+    "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/disconnect"},
     "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create"},
     "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune"},
-    # "NETWORKS_DELETE": {"type": "DELETE", "regex": "networks/[a-zA-Z0-9_.-]+"},
-    "NETWORKS": {"type": "GET", "regex": "networks"},
+    "NETWORKS_LIST": {"type": "GET", "regex": "networks"},
     # End Network Commands
-    "NODES": {"type": "GET", "regex": "nodes"},
+    "NODES": {"type": "GET POST", "regex": "nodes"},
     "PING": {"type": "GET", "regex": "_ping"},
-    "PLUGINS": {"type": "GET", "regex": "plugins"},
-    "POST": {"type": "GET", "regex": "post"},
-    "SECRETS": {"type": "GET", "regex": "secrets"},
-    "SERVICES": {"type": "GET", "regex": "services"},
-    "SESSION": {"type": "GET", "regex": "session"},
-    "SWARM": {"type": "GET", "regex": "swarm"},
+    "PLUGINS": {"type": "GET", "regex": "plugins"}, # There are more options
+    "SECRETS": {"type": "GET", "regex": "secrets"}, # There are more options
+    "SERVICES": {"type": "GET", "regex": "services"}, # There are more options
+    "SESSION": {"type": "POST", "regex": "session"},
+    "SWARM": {"type": "GET", "regex": "swarm"}, # There are more options
     "SYSTEM": {"type": "GET", "regex": "system"},
     "TASKS": {"type": "GET", "regex": "tasks"},
     "VERSION": {"type": "GET", "regex": "version"},
     # Volume commands
     "VOLUMES_CREATE": {"type": "POST", "regex": "volumes/create"},
     "VOLUMES_PRUNE": {"type": "POST", "regex": "volumes/prune"},
-    # "VOLUMES_DELETE": {"type": "DELETE", "regex": "volumes/[a-zA-Z0-9_.-]+"},
-    "VOLUMES": {"type": "GET", "regex": "volumes"}
+    "VOLUMES_LIST": {"type": "GET", "regex": "volumes"}
     # End volume commands
 }
 
@@ -139,9 +141,10 @@ http {
 for key in VARS:
     # Only add location if enviroment label set.
     if (os.environ.get(key) == "1"):
-        # Check if type is DELETE is also set (fixes issues with priority of regex)
         
-        if (os.environ.get(key+"_DELETE") == "1"):
+        # Handle DELETE as a special case of the base *_LIST
+        if (os.environ.get(key[:-5]+"_DELETE") == "1"):
+            print("ADD DELETE")
             type = VARS[key]['type'] + " DELETE"
         else:
             type = VARS[key]['type']
@@ -150,14 +153,22 @@ for key in VARS:
         f.writelines([
             f"        # {key}\n",
             f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
-            "            proxy_pass http://docker;\n",
-            # Added to enable websockets
-            "            proxy_http_version 1.1;\n",
-            # "            proxy_set_header Connection '';\n"
-            "            proxy_set_header Upgrade $http_upgrade;\n",
-            # "            proxy_set_header Connection 'Upgrade';\n",
-            "            proxy_set_header Connection $http_connection;\n",
-            f"            limit_except {type} DELETE {{\n",
+            "            proxy_pass http://docker;\n"
+        ])
+        
+        # For now, only CONTAINERS_ATTACH requires websockets so this is a special case.
+        if (key == "CONTAINERS_ATTACH"):
+            f.writelines([ 
+                "            # Enable websockets\n",
+                "            proxy_http_version 1.1;\n",
+                # "            proxy_set_header Connection '';\n"
+                "            proxy_set_header Upgrade $http_upgrade;\n",
+                # "            proxy_set_header Connection 'Upgrade';\n",
+                "            proxy_set_header Connection $http_connection;\n"
+            ])
+
+        f.writelines([
+            f"            limit_except {type} {{\n",
             "                deny all;\n",
             "            }\n",
             "        }\n",
