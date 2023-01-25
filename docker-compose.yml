@@ -1,7 +1,8 @@
 ---
 version: "3.8"
 
-# NOTES: 1. Test exec: docker -H tcp://localhost:2375 exec -it docker-socket-proxy /bin/ash
+# NOTES: 1. Test EXEC: docker -H tcp://localhost:2375 exec -it docker-socket-proxy /bin/ash
+#        2. Test CURL: curl -I http://localhost:2375/tasks
 #        
 
 services:
@@ -19,6 +20,7 @@ services:
 
     environment:
       TZ: America/Toronto
+      DESCRIPTIVE_ERRORS: 0
       ALLOW_RESTARTS: 0
       AUTH: 0
       BUILD: 0
@@ -70,3 +72,4 @@ services:
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./nginx.conf:/etc/nginx/nginx.conf # This is for easier testing

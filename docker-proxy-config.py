@@ -22,10 +22,10 @@
 
 import os
 
-# Setup variables (the order matters from an nginx perspective)
+# Setup variables (the order matters from an nginx location parsing perspective)
 #
 # Note: DELETE operations are handled as a special case due to how
-#       the NGINX config file has to be formatted.
+#       the NGINX config file format.
 
 VARS = {
     # GET Requests
@@ -93,8 +93,7 @@ e.close()
 f = open("/etc/nginx/nginx.conf", "w")
 
 # Output generic nignx.conf content, but have workers run as root so they can access the docker socket.
-f.write('''
-user root root; # Workers need root access to access to docker socket.
+f.write('''user root root; # Workers need root access to access to docker socket.
 error_log  /var/log/nginx/error.log notice;
 pid        /var/run/nginx.pid;
 
@@ -106,32 +105,38 @@ http {
     include       /etc/nginx/mime.types;
     default_type  application/octet-stream;
 
-    # log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
-    #                   '$status $body_bytes_sent "$http_referer" '
-    #                   '"$http_user_agent" "$http_x_forwarded_for"';
-    log_format  main  '[$time_local] "$request" $status';
+    log_format  main  '[$time_local] "$request" $status [$sent_http_docker_proxy_rule]';
 
     access_log  /var/log/nginx/access.log  main;
 
     sendfile        on;
+    tcp_nodelay     on;
     #tcp_nopush     on;
 
     keepalive_timeout  65;
 
     #gzip  on;
 
+    # Used below for websocket connections
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+    
     server {
         listen 2375 default_server;
 
         # Custom 403 forbidden page
         error_page 403 /error/custom_403.html;
         location /error {
+            add_header 'docker-proxy-rule' '$docker_proxy_rule' always;
             root /usr/share/nginx/html;
             internal;
         }
         
-        # deny everything that doesn't match another location
+        # Deny everything that doesn't match another location
         location / {
+            set $docker_proxy_rule 'Location: Default (BLOCKED)';
             return 403; 
         }
 
@@ -152,33 +157,45 @@ for key in VARS:
         f.writelines([
             f"        # {key}\n",
             f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
-            "            proxy_pass http://docker;\n"
-        ])
-        
-        # For now, only CONTAINERS_ATTACH and EXEC require websockets so this is a special case.
-        if (key == "CONTAINERS_ATTACH" or key == "EXEC"):
-            f.writelines([ 
-                "            # Enable websockets\n",
-                "            proxy_http_version 1.1;\n",
-                # "            proxy_set_header Connection '';\n"
-                "            proxy_set_header Upgrade $http_upgrade;\n",
-                # "            proxy_set_header Connection 'Upgrade';\n",
-                "            proxy_set_header Connection $http_connection;\n"
-            ])
-
-        f.writelines([
+            f"            add_header 'docker-proxy-rule' 'Location: {key}' always;\n"
+            "            proxy_pass http://docker;\n",
+            # Bellow added to enable websockets (See https://www.nginx.com/blog/websocket-nginx/)
+            "            proxy_http_version 1.1;\n",
+            "            proxy_set_header Upgrade $http_upgrade;\n",
+            "            proxy_set_header Connection $connection_upgrade;\n",
+            "            proxy_set_header Host $host;\n",
+            # End of websockets lines
             f"            limit_except {type} {{\n",
             "                deny all;\n",
             "            }\n",
             "        }\n",
             "\n"
         ])
+        
+        # # For now, only CONTAINERS_ATTACH and EXEC require websockets so this is a special case.
+        # if (key == "CONTAINERS_ATTACH" or key == "EXEC"):
+        #     f.writelines([ 
+        #         "            # Enable websockets\n",
+        #         "            proxy_http_version 1.1;\n",
+        #         # "            proxy_set_header Connection '';\n"
+        #         "            proxy_set_header Upgrade $http_upgrade;\n",
+        #         # "            proxy_set_header Connection 'Upgrade';\n",
+        #         "            proxy_set_header Connection $http_connection;\n"
+        #     ])
+
+        # f.writelines([
+        #     f"            limit_except {type} {{\n",
+        #     "                deny all;\n",
+        #     "            }\n",
+        #     "        }\n",
+        #     "\n"
+        # ])
     elif (os.environ.get("DESCRIPTIVE_ERRORS") == "1"):
         # Output location block for descriptive errors
         f.writelines([
             f"        # {key} forbidden\n",
             f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
-            "           # Custom 403 forbidden page\n",
+            f"           set $docker_proxy_rule 'Location: {key} (BLOCKED)';\n",
             f"           error_page 403 /error/custom_403_{key}.html;\n",
             "           return 403;\n",
             "        }\n",
@@ -196,7 +213,7 @@ f.write('''
 
     upstream docker {
         server unix:/var/run/docker.sock;
-        # keepalive 64;
+        keepalive 32;
     }
 }
 ''')
