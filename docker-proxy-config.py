@@ -47,7 +47,7 @@ VARS = {
     "CONTAINERS_EXEC": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/exec"},
     "CONTAINERS_CREATE": {"type": "POST", "regex": "containers/create"},
     "CONTAINERS_PRUNE": {"type": "POST", "regex": "containers/prune"},
-    "CONTAINERS_LIST": {"type": "GET", "regex": "containers"},
+    "CONTAINERS": {"type": "GET", "regex": "containers"},
     # End Container commands
     "DISTRIBUTION": {"type": "GET", "regex": "distribution"},
     "EVENTS": {"type": "GET", "regex": "events"},
@@ -56,7 +56,7 @@ VARS = {
     "IMAGES_BUILD": {"type": "GET", "regex": "build"},
     "IMAGES_CREATE": {"type": "POST", "regex": "images/create"},
     "IMAGES_PRUNE": {"type": "POST", "regex": "images/prune"},
-    "IMAGES_LIST": {"type": "GET", "regex": "images"},
+    "IMAGES": {"type": "GET", "regex": "images"},
     # End Images commands
     "INFO": {"type": "GET", "regex": "info"},
     # Network Commands
@@ -64,7 +64,7 @@ VARS = {
     "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/disconnect"},
     "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create"},
     "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune"},
-    "NETWORKS_LIST": {"type": "GET", "regex": "networks"},
+    "NETWORKS": {"type": "GET", "regex": "networks"},
     # End Network Commands
     "NODES": {"type": "GET POST", "regex": "nodes"},
     "PING": {"type": "GET", "regex": "_ping"},
@@ -79,23 +79,17 @@ VARS = {
     # Volume commands
     "VOLUMES_CREATE": {"type": "POST", "regex": "volumes/create"},
     "VOLUMES_PRUNE": {"type": "POST", "regex": "volumes/prune"},
-    "VOLUMES_LIST": {"type": "GET", "regex": "volumes"}
+    "VOLUMES": {"type": "GET", "regex": "volumes"}
     # End volume commands
 }
-
-# Create custom errors directory and default 403 error file
-os.makedirs("/usr/share/nginx/html/error", exist_ok=True)
-e = open(f"/usr/share/nginx/html/error/custom_403.html", "w")
-e.write(f'403 Forbidden: docker-socket-proxy is configured to not allow access to this function.')
-e.close()
 
 # Open config file
 f = open("/etc/nginx/nginx.conf", "w")
 
 # Output generic nignx.conf content, but have workers run as root so they can access the docker socket.
 f.write('''user root root; # Workers need root access to access to docker socket.
-error_log  /var/log/nginx/error.log notice;
-pid        /var/run/nginx.pid;
+error_log /var/log/nginx/error.log notice;
+pid /var/run/nginx.pid;
 
 events {
     worker_connections  1024;
@@ -113,6 +107,7 @@ http {
     tcp_nodelay     on;
     #tcp_nopush     on;
 
+    underscores_in_headers on;
     keepalive_timeout  65;
 
     #gzip  on;
@@ -126,18 +121,10 @@ http {
     server {
         listen 2375 default_server;
 
-        # Custom 403 forbidden page
-        error_page 403 /error/custom_403.html;
-        location /error {
-            add_header 'docker-proxy-rule' '$docker_proxy_rule' always;
-            root /usr/share/nginx/html;
-            internal;
-        }
-        
         # Deny everything that doesn't match another location
         location / {
-            set $docker_proxy_rule 'Location: Default (BLOCKED)';
-            return 403; 
+            add_header 'docker-proxy-rule' 'Location: Default (BLOCKED)' always;
+            return 403 '403 Forbidden: docker-socket-proxy is configured to not allow access to this function.'; 
         }
 
 ''')
@@ -147,8 +134,8 @@ for key in VARS:
     # Only add location if enviroment label set.
     if (os.environ.get(key) == "1"):
         
-        # Handle DELETE as a special case of the base *_LIST
-        if (os.environ.get(key[:-5]+"_DELETE") == "1"):
+        # Handle DELETE as a special case of the base GET command
+        if (os.environ.get(key+"_DELETE") == "1"):
             type = VARS[key]['type'] + " DELETE"
         else:
             type = VARS[key]['type']
@@ -171,45 +158,19 @@ for key in VARS:
             "        }\n",
             "\n"
         ])
-        
-        # # For now, only CONTAINERS_ATTACH and EXEC require websockets so this is a special case.
-        # if (key == "CONTAINERS_ATTACH" or key == "EXEC"):
-        #     f.writelines([ 
-        #         "            # Enable websockets\n",
-        #         "            proxy_http_version 1.1;\n",
-        #         # "            proxy_set_header Connection '';\n"
-        #         "            proxy_set_header Upgrade $http_upgrade;\n",
-        #         # "            proxy_set_header Connection 'Upgrade';\n",
-        #         "            proxy_set_header Connection $http_connection;\n"
-        #     ])
-
-        # f.writelines([
-        #     f"            limit_except {type} {{\n",
-        #     "                deny all;\n",
-        #     "            }\n",
-        #     "        }\n",
-        #     "\n"
-        # ])
     elif (os.environ.get("DESCRIPTIVE_ERRORS") == "1"):
-        # Output location block for descriptive errors
+        # Output location block for descriptive errors for forbidden locations
         f.writelines([
             f"        # {key} forbidden\n",
             f"        location ~ ^(/v[\d\.]+)?/{VARS[key]['regex']} {{\n",
-            f"           set $docker_proxy_rule 'Location: {key} (BLOCKED)';\n",
-            f"           error_page 403 /error/custom_403_{key}.html;\n",
-            "           return 403;\n",
+            f"            add_header 'docker-proxy-rule' 'Location: {key} (BLOCKED)' always;\n"
+            f"            return 403 '403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the {key} option.';\n",
             "        }\n",
             "\n"
         ])
 
-        # Output the custom error page
-        e = open(f"/usr/share/nginx/html/error/custom_403_{key}.html", "w")
-        e.write(f'403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the {key} option.')
-        e.close()
-
 # Output closing text
-f.write('''
-    }
+f.write('''}
 
     upstream docker {
         server unix:/var/run/docker.sock;
