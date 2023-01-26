@@ -29,8 +29,8 @@ import os
 
 VARS = {
     # GET Requests
-    "AUTH": {"type": "GET", "regex": "auth"},
-    "COMMIT": {"type": "GET", "regex": "commit"}, # %%% Look into this (seems images realted only)
+    "AUTH": {"type": "POST", "regex": "auth"},
+    "COMMIT": {"type": "GET", "regex": "commit"}, # %%% Look into this (seems images related only and appears to be a POST command)
     "CONFIGS": {"type": "GET", "regex": "configs"},
     # Container commands
     "CONTAINERS_ATTACH": {"type": "GET POST", "regex": "containers/[a-zA-Z0-9_.-]+/attach"},
