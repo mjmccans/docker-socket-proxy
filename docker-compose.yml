@@ -1,8 +1,9 @@
 ---
 version: "3.8"
 
-# NOTES: 1. Test EXEC: docker -H tcp://localhost:2375 exec -it docker-socket-proxy /bin/ash
-#        2. Test CURL: curl -I http://localhost:2375/tasks
+# NOTES: 1. There are example docker-compose.yml files in the 'examples' directory on Github.
+#        2. Test EXEC: docker -H tcp://localhost:2375 exec -it docker-socket-proxy /bin/ash
+#        3. Test CURL: curl -I http://localhost:2375/tasks
 #        
 
 services:

@@ -2,7 +2,7 @@
 
 This is a reverse proxy for your Docker socket that allows you to control what Docker API endpoints can be accessed by docker clients such as Portainer, Diun and Watchtower.
 
-This is important from a security perspective because giving access to your Docker socket essentially means giving root access to your host, and also could allow undesired changes to your other Docker containers and Docker environment.
+Using a proxy is important from a security perspective because giving direct access to your Docker socket essentially means giving root access to your host, and also could allow undesired changes to your other Docker containers and Docker environment.
 
 ## Inner Workings
 
@@ -36,7 +36,7 @@ This Docker image is based upon the official [Nginx Alpine](https://hub.docker.c
         $ docker -H localhost:2375 image ls
         Error response from daemon: 403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the IMAGES option.
 
-See here for some docker compose examples.
+See the [examples](./examples) folder for some docker compose examples.
 
 ## Log Files / Return Messages
 
@@ -146,4 +146,4 @@ By default, the following options are set (and you can more details on each belo
 
 ## Inspiration
 
-This project was inspired by [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy) and [fluencelabs/docker-socket-proxy](https://github.com/fluencelabs/docker-socket-proxy). Both of those projects build upon haproxy while I am more familiar (but by no means an expert) with Nginx so I have used that for this project. I also wanted to include a finer level of control as included in fluencelabs' project.
+This project was inspired by [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy) and [fluencelabs/docker-socket-proxy](https://github.com/fluencelabs/docker-socket-proxy). Both of those projects build upon haproxy while I am more familiar (but by no means an expert) with Nginx so I have used that for this project. I also wanted to include a finer level of control as included in fluencelabs' project, and include more detailed log details and client messages to assist with setup.
