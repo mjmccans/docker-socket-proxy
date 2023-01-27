@@ -1,0 +1,95 @@
+# Example docker-compose.yml file for Portainer
+#
+# Note that the configuration below does not grant access to all of Portainer's
+# functionality. The below is more of a read-only use of Portainer, which you
+# can adjust for your purposes.
+#
+# You can remove the environment variables that are being set to 0 (revoke), but
+# the full list of options is set out below for ease of configuration. 
+#
+
+version: "3.5"
+
+services:
+
+  portainer-docker-proxy:
+    container_name: portainer-docker-proxy
+    image: mjmccans/docker-socket-proxy
+      
+    environment:
+      TZ: America/Toronto
+      DESCRIPTIVE_ERRORS: 1
+      AUTH: 0
+      COMMIT: 0
+      CONFIGS: 0
+      CONTAINERS: 1
+      CONTAINERS_ATTACH: 1
+      CONTAINERS_CREATE: 0
+      CONTAINERS_DELETE: 0
+      CONTAINERS_KILL: 0
+      CONTAINERS_PAUSE: 0
+      CONTAINERS_PRUNE: 0
+      CONTAINERS_RENAME: 0
+      CONTAINERS_RESTART: 0
+      CONTAINERS_RESIZE: 1
+      CONTAINERS_START: 0
+      CONTAINERS_STOP: 0
+      CONTAINERS_UPDATE: 0
+      CONTAINERS_UNPAUSE: 0
+      CONTAINERS_WAIT: 0
+      CONTAINERS_EXEC: 1
+      DISTRIBUTION: 0
+      EVENTS: 1
+      EXEC: 1
+      IMAGES: 1
+      IMAGES_BUILD: 0
+      IMAGES_CREATE: 0
+      IMAGES_DELETE: 0
+      IMAGES_PRUNE: 0
+      INFO: 1
+      NETWORKS: 1
+      NETWORKS_CONNECT: 0
+      NETWORKS_CREATE: 0
+      NETWORKS_DELETE: 0
+      NETWORKS_DISCONNECT: 0
+      NETWORKS_PRUNE: 0
+      NODES: 0
+      NODES_DELETE: 0
+      PING: 1
+      PLUGINS: 0
+      SECRETS: 0
+      SERVICES: 0
+      SESSION: 0
+      SWARM: 0
+      SYSTEM: 0
+      TASKS: 0
+      VERSION: 1
+      VOLUMES: 1
+      VOLUMES_CREATE: 0
+      VOLUMES_DELETE: 0
+      VOLUMES_PRUNE: 0
+
+    restart: unless-stopped
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce
+    ports:
+      - "9443:9443"
+
+    command:
+      --sslcert /certs/rotor.crt
+      --sslkey /certs/rotor.key
+      -H tcp://portainer-docker-proxy:2375 # This makes Portainer use the docker-proxy as the Docker endpoint.
+
+    restart: unless-stopped
+    
+    depends_on:
+      - portainer-docker-proxy
+    
+    volumes:
+      - ./data:/data
+      - ./certs:/certs
