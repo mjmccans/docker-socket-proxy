@@ -2,7 +2,7 @@ name: Build Docker Image
 
 # Controls when the workflow will run
 on:
-  workflow_dispatch
+  workflow_dispatch:
   push:
     branches:
       - 'main'
@@ -14,9 +14,9 @@ on:
       - 'main'
       - 'dev'
 
-# permissions are needed if pushing to ghcr.io
-permissions: 
-  packages: write
+# # permissions are needed if pushing to ghcr.io
+# permissions: 
+#   packages: write
 
 jobs:
   build:
