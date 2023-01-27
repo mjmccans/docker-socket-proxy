@@ -25,6 +25,10 @@ jobs:
       # Get the repository's code
       - name: Checkout
         uses: actions/checkout@v2
+        # Adding this for private repositories (%%% !!! REMOVE WHEN MOVING TO PUBLIC !!! %%%
+        with:
+          token: ${{ secrets.MY_REPO_PAT }}
+          submodules: recursive
       # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
