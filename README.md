@@ -6,7 +6,7 @@ Using a proxy is important from a security perspective because giving direct acc
 
 ## Inner Workings
 
-This Docker image is based upon the official [Nginx Alpine](https://hub.docker.com/_/nginx) image with a small Python script that creates a nginx.conf file based upon environment labels you set when you run the image. By default certain read-only API commands are allowed (see [below](#granted-by-default) for more details), but you can adjust to suit your needs. Where access to a certain API command has been revoked, an HTTP 403 Forbidden status is returned and there is an option that allows you to include additional details in the message (see [below](#log-files--return-messages) for more details).
+This Docker image is based upon the official [Nginx Alpine](https://hub.docker.com/_/nginx) image with a small Python script that creates a nginx.conf file based upon environment labels you set when you run the image. By default certain read-only API commands are allowed (see [below](#granted-by-default) for more details), but you can adjust to suit your needs. Where access to a certain API command has been revoked, an HTTP 403 Forbidden status is returned and there is an option that allows you to include additional details in the message (see [below](#logs--return-messages) for more details).
 
 ## Security Warnings and Recommendations
 
