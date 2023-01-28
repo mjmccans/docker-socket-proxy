@@ -1,17 +1,17 @@
 # mjmccans/docker-socket-proxy
 
-This is a reverse proxy for your Docker socket that allows you to control what Docker API endpoints can be accessed by docker clients such as Portainer, Diun and Watchtower.
+This is a reverse proxy for your Docker socket that allows you to control what Docker API endpoints can be accessed by Docker clients such as Portainer, Diun and Watchtower.
 
 Using a proxy is important from a security perspective because giving direct access to your Docker socket essentially means giving root access to your host, and also could allow undesired changes to your other Docker containers and Docker environment.
 
 ## Inner Workings
 
-This Docker image is based upon the official [Nginx Alpine](https://hub.docker.com/_/nginx) image with a small Python script that creates a nginx.conf file based upon environment labels you set when you run the image. By default certain read-only api commands are allowed (see below for more details), but you can adjust this to suit your needs. Where access to a certain API command has been revoked, an HTTP 403 Forbidden status is returned and there is an option that allows you to include additional details in the message (see below for more details).
+This Docker image is based upon the official [Nginx Alpine](https://hub.docker.com/_/nginx) image with a small Python script that creates a nginx.conf file based upon environment labels you set when you run the image. By default certain read-only API commands are allowed (see [below](#granted-by-default) for more details), but you can adjust to suit your needs. Where access to a certain API command has been revoked, an HTTP 403 Forbidden status is returned and there is an option that allows you to include additional details in the message (see [below](#log-files--return-messages) for more details).
 
 ## Security Warnings and Recommendations
 
-- Never expose this container's port to a public network as this would allow anyone to connect to port and issue allowed docker commands. This container is intended to only be exposed on the internal Docker network of the service that will use the proxy.
-- Only allow access to those API commands the service requires. One way to do this is to start with the default configuration, watch the logs (see below for more information), and only add those API commands that are necessary.
+- Never expose this container's port to a public network as this would allow anyone to connect to the port and issue allowed docker commands. This container is intended to only be exposed on the internal Docker network of the service that will use the proxy.
+- Only allow access to those API commands the service requires. One way to do this is to start with the default configuration, watch the logs (see below for more information), and then only add those API commands that are necessary for your use case.
 
 ## Usage
 
@@ -36,15 +36,15 @@ This Docker image is based upon the official [Nginx Alpine](https://hub.docker.c
         $ docker -H localhost:2375 image ls
         Error response from daemon: 403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the IMAGES option.
 
-See the [examples](./examples) folder for some docker compose examples.
+See the "[examples](./examples)" folder for some docker compose examples.
 
-## Log Files / Return Messages
+## Logs / Return Messages
 
-The container provides useful log output showing what api calls have been made, the return code and some additional detail that can be helpful for debugging. You can turn on the `DESCRIPTIVE_ERRORS` option to get more descriptive logging and client-side messages where a request is rejected.
+The container provides useful log output showing what API calls have been made, the return codes and additional details that can be helpful for configuration and debugging. You can turn on the `DESCRIPTIVE_ERRORS` option to get more descriptive logging and client-side messages where a request is rejected. Turning on the `DESCRIPTIVE_ERRORS` option creates a more complex nginx.conf file that contains more 'locations', so I recommend turning the option off once you have everything set up.
 
 ### Example
 
-In the example below, we can see that the first call to `info` has been accepted (return code 200) and the call to `volumes\create` has been rejected (return code 403). In addition, the last part of each line shows what environment variable option was in play to create this outcome. Note that if you do not have the `DESCRIPTIVE_ERRORS` option enabled you will not be given a specific environment variable option where a requires is rejected.
+In the example below, we can see that the first call to `info` has been accepted (return code 200) and the call to `volumes\create` has been rejected (return code 403). In addition, the last part of each line shows what environment variable option was in play to create this outcome. Note that if you do not have the `DESCRIPTIVE_ERRORS` option enabled you will not be given a specific environment variable option where an API call is rejected.
 
 ```
 [25/Jan/2023:15:25:12 -0500] "GET /info HTTP/1.1" 200 [Location: INFO]
@@ -56,7 +56,7 @@ On the client side you can also get helpful information. With the `DESCRIPTIVE_E
 403 Forbidden: docker-socket-proxy is configured to not allow access to this function. To enable this function turn on the VOLUMES_CREATE option.
 ```
 
-Without the `DESCRIPTIVE_ERRORS` option enabled you would get a more generic return message on the client like like the following:
+Without the `DESCRIPTIVE_ERRORS` option enabled you would get a more generic return message on the client like the following:
 ```
 403 Forbidden: docker-socket-proxy is configured to not allow access to this function.
 ```
@@ -85,7 +85,7 @@ By default, the following options are set (and you can more details on each belo
 
 #### Logging and Output
 
-- `DESCRIPTIVE_ERRORS`: Add description %%%
+- `DESCRIPTIVE_ERRORS`: See [above](#log-files--return-messages) for more details.
 
 #### GET Commands (Read-Only)
 
@@ -146,4 +146,4 @@ By default, the following options are set (and you can more details on each belo
 
 ## Inspiration
 
-This project was inspired by [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy) and [fluencelabs/docker-socket-proxy](https://github.com/fluencelabs/docker-socket-proxy). Both of those projects build upon haproxy while I am more familiar (but by no means an expert) with Nginx so I have used that for this project. I also wanted to include a finer level of control as included in fluencelabs' project, and include more detailed log details and client messages to assist with setup.
+This project was inspired by [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy) and [fluencelabs/docker-socket-proxy](https://github.com/fluencelabs/docker-socket-proxy). Both of those projects build upon haproxy while I am more familiar (but by no means an expert) with Nginx so I have used Nginx for this project. I also wanted to include a finer level of control similar to what is included in fluencelabs' project, and also wanted to include more detailed log messages and client messages to assist with setup and debuging.
