@@ -1,4 +1,4 @@
-FROM nginx:1.23.4-alpine as stage1
+FROM nginx:1.25.0-alpine as stage1
 
 # Expose port 2375
 EXPOSE 2375
