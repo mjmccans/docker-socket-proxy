@@ -61,7 +61,7 @@ VARS = {
     "INFO": {"type": "GET", "regex": "info"},
     # Network Commands
     "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/connect"},
-    "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/disconnect"},
+    "NETWORKS_DISCONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/disconnect"},
     "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create"},
     "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune"},
     "NETWORKS": {"type": "GET", "regex": "networks"},
