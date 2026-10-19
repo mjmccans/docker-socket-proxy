@@ -91,6 +91,8 @@ By default, the following options are set (and you can more details on each belo
 
 - `WORKER_CONNECTIONS`: Maximum number of simultaneous connections (see [worker_connections](https://nginx.org/en/docs/ngx_core_module.html#worker_connections)). Defaults to `1024`.
 
+Requests and responses are passed through without buffering, so streamed responses (e.g. `events`, `logs`, image pulls, builds and exports) reach the client as soon as Docker sends them, and uploads of any size (e.g. build contexts and image loads) are accepted.
+
 #### GET Commands (Read-Only)
 
 - [CONFIGS](https://docs.docker.com/engine/api/v1.41/#tag/Config)

@@ -111,6 +111,11 @@ http {
     underscores_in_headers on;
     keepalive_timeout  65;
 
+    # Pass streamed requests and responses (events, logs, pulls, builds, exports, etc.) straight through
+    proxy_buffering off;
+    proxy_request_buffering off;
+    client_max_body_size 0; # Allow uploads of any size (e.g. build contexts, image loads)
+
     #gzip  on;
 
     # Used below for websocket connections
