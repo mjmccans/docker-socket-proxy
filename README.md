@@ -90,6 +90,7 @@ By default, the following options are set (and you can more details on each belo
 #### nginx Settings
 
 - `WORKER_CONNECTIONS`: Maximum number of simultaneous connections (see [worker_connections](https://nginx.org/en/docs/ngx_core_module.html#worker_connections)). Defaults to `1024`.
+- `PROXY_READ_TIMEOUT`: How long a connection to Docker may stay idle before it is closed (see [proxy_read_timeout](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout)). Increase it (e.g. `24h`) for clients that keep idle streams open, such as `events`, followed `logs`, `wait` or interactive `exec`/`attach` sessions. When not set, nginx's default of `60s` is used.
 
 Requests and responses are passed through without buffering, so streamed responses (e.g. `events`, `logs`, image pulls, builds and exports) reach the client as soon as Docker sends them, and uploads of any size (e.g. build contexts and image loads) are accepted.
 

@@ -115,7 +115,10 @@ http {
     proxy_buffering off;
     proxy_request_buffering off;
     client_max_body_size 0; # Allow uploads of any size (e.g. build contexts, image loads)
-
+''')
+if (os.environ.get("PROXY_READ_TIMEOUT")):
+    f.write(f"    proxy_read_timeout {os.environ.get('PROXY_READ_TIMEOUT')};\n")
+f.write('''
     #gzip  on;
 
     # Used below for websocket connections
