@@ -87,6 +87,10 @@ By default, the following options are set (and you can more details on each belo
 
 - `DESCRIPTIVE_ERRORS`: See [above](#log-files--return-messages) for more details.
 
+#### nginx Settings
+
+- `WORKER_CONNECTIONS`: Maximum number of simultaneous connections (see [worker_connections](https://nginx.org/en/docs/ngx_core_module.html#worker_connections)). Defaults to `1024`.
+
 #### GET Commands (Read-Only)
 
 - [CONFIGS](https://docs.docker.com/engine/api/v1.41/#tag/Config)

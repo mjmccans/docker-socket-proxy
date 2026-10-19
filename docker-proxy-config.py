@@ -92,8 +92,9 @@ error_log /var/log/nginx/error.log notice;
 pid /var/run/nginx.pid;
 
 events {
-    worker_connections  1024;
-}
+''')
+f.write(f"    worker_connections  {os.environ.get('WORKER_CONNECTIONS', '1024')};\n")
+f.write('''}
 
 http {
     include       /etc/nginx/mime.types;
