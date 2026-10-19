@@ -128,8 +128,12 @@ f.write('''
     }
     
     server {
-        listen 2375 default_server;
-
+''')
+if (os.environ.get("TCP_KEEPALIVE")):
+    f.write(f"        listen 2375 default_server so_keepalive={os.environ.get('TCP_KEEPALIVE')};\n")
+else:
+    f.write("        listen 2375 default_server;\n")
+f.write('''
         # Deny everything that doesn't match another location
         location / {
             add_header 'docker-proxy-rule' 'Location: Default (BLOCKED)' always;
