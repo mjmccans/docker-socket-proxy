@@ -45,8 +45,8 @@ VARS = {
     "CONTAINERS_UNPAUSE": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/unpause"},
     "CONTAINERS_WAIT": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/wait"},
     "CONTAINERS_EXEC": {"type": "POST", "regex": "containers/[a-zA-Z0-9_.-]+/exec"},
-    "CONTAINERS_CREATE": {"type": "POST", "regex": "containers/create"},
-    "CONTAINERS_PRUNE": {"type": "POST", "regex": "containers/prune"},
+    "CONTAINERS_CREATE": {"type": "POST", "regex": "containers/create$"},
+    "CONTAINERS_PRUNE": {"type": "POST", "regex": "containers/prune$"},
     "CONTAINERS": {"type": "GET", "regex": "containers"},
     # End Container commands
     "DISTRIBUTION": {"type": "GET", "regex": "distribution"},
@@ -54,16 +54,16 @@ VARS = {
     "EXEC": {"type": "POST GET", "regex": "exec"},
     # Images commands
     "IMAGES_BUILD": {"type": "GET", "regex": "build"},
-    "IMAGES_CREATE": {"type": "POST", "regex": "images/create"},
-    "IMAGES_PRUNE": {"type": "POST", "regex": "images/prune"},
+    "IMAGES_CREATE": {"type": "POST", "regex": "images/create$"},
+    "IMAGES_PRUNE": {"type": "POST", "regex": "images/prune$"},
     "IMAGES": {"type": "GET", "regex": "images"},
     # End Images commands
     "INFO": {"type": "GET", "regex": "info"},
     # Network Commands
     "NETWORKS_CONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/connect"},
     "NETWORKS_DISCONNECT": {"type": "POST", "regex": "networks/[a-zA-Z0-9_.-]+/disconnect"},
-    "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create"},
-    "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune"},
+    "NETWORKS_CREATE": {"type": "POST", "regex": "networks/create$"},
+    "NETWORKS_PRUNE": {"type": "POST", "regex": "networks/prune$"},
     "NETWORKS": {"type": "GET", "regex": "networks"},
     # End Network Commands
     "NODES": {"type": "GET POST", "regex": "nodes"},
@@ -77,8 +77,8 @@ VARS = {
     "TASKS": {"type": "GET", "regex": "tasks"},
     "VERSION": {"type": "GET", "regex": "version"},
     # Volume commands
-    "VOLUMES_CREATE": {"type": "POST", "regex": "volumes/create"},
-    "VOLUMES_PRUNE": {"type": "POST", "regex": "volumes/prune"},
+    "VOLUMES_CREATE": {"type": "POST", "regex": "volumes/create$"},
+    "VOLUMES_PRUNE": {"type": "POST", "regex": "volumes/prune$"},
     "VOLUMES": {"type": "GET", "regex": "volumes"}
     # End volume commands
 }
