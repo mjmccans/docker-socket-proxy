@@ -92,8 +92,9 @@ error_log /var/log/nginx/error.log notice;
 pid /var/run/nginx.pid;
 
 events {
-    worker_connections  1024;
-}
+''')
+f.write(f"    worker_connections  {os.environ.get('WORKER_CONNECTIONS', '1024')};\n")
+f.write('''}
 
 http {
     include       /etc/nginx/mime.types;
@@ -110,6 +111,14 @@ http {
     underscores_in_headers on;
     keepalive_timeout  65;
 
+    # Pass streamed requests and responses (events, logs, pulls, builds, exports, etc.) straight through
+    proxy_buffering off;
+    proxy_request_buffering off;
+    client_max_body_size 0; # Allow uploads of any size (e.g. build contexts, image loads)
+''')
+if (os.environ.get("PROXY_READ_TIMEOUT")):
+    f.write(f"    proxy_read_timeout {os.environ.get('PROXY_READ_TIMEOUT')};\n")
+f.write('''
     #gzip  on;
 
     # Used below for websocket connections
@@ -119,8 +128,12 @@ http {
     }
     
     server {
-        listen 2375 default_server;
-
+''')
+if (os.environ.get("TCP_KEEPALIVE")):
+    f.write(f"        listen 2375 default_server so_keepalive={os.environ.get('TCP_KEEPALIVE')};\n")
+else:
+    f.write("        listen 2375 default_server;\n")
+f.write('''
         # Deny everything that doesn't match another location
         location / {
             add_header 'docker-proxy-rule' 'Location: Default (BLOCKED)' always;
